@@ -1,0 +1,9 @@
+{
+	"name": "manucurist",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "b16d050a-144c-43eb-b10f-4999a4abb527",
+		"tenantId": "a2e466aa-4f86-4545-b5b8-97da7c8febf3"
+	}
+}
