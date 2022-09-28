@@ -1,0 +1,15 @@
+{
+	"name": "Web1",
+	"properties": {
+		"annotations": [],
+		"type": "Web",
+		"typeProperties": {
+			"url": "https://www.manucurist.com/collections/couleurs-vernis-green",
+			"authenticationType": "Anonymous"
+		},
+		"connectVia": {
+			"referenceName": "Webruntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
