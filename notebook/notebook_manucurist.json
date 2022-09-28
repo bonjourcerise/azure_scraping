@@ -1,0 +1,293 @@
+{
+	"name": "notebook_manucurist",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "pool1",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "72aaf40e-2b84-42ff-8a09-687a57acc897"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/29b8dd4c-3e68-4822-a4a0-42a57d1bb461/resourceGroups/ARA_P15_Lyon/providers/Microsoft.Synapse/workspaces/synapsemanuc/bigDataPools/pool1",
+				"name": "pool1",
+				"type": "Spark",
+				"endpoint": "https://synapsemanuc.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/pool1",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import pandas as pd\r\n",
+					"from bs4 import BeautifulSoup\r\n",
+					"from requests import get\r\n",
+					"import requests\r\n",
+					"from datetime import datetime"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# loop all the page baby\r\n",
+					"def all_page_link(start_url):\r\n",
+					"    all_urls = []\r\n",
+					"    url = start_url\r\n",
+					"    while(url != None):            \r\n",
+					"        all_urls.append(url)\r\n",
+					"        soup = BeautifulSoup(requests.get(url).text,\"html.parser\")\r\n",
+					"        next_links = soup.find_all(class_='next')\r\n",
+					"        if (len(next_links) == 0):        \r\n",
+					"            url = None\r\n",
+					"        else:\r\n",
+					"            next_page = \"https://www.manucurist.com/\" + next_links[0].find('a').get('href')\r\n",
+					"            url = next_page\r\n",
+					"    return all_urls"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"link = all_page_link('https://www.manucurist.com/collections/vernis-green?page=1')"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def scrapping(url,class_):\r\n",
+					"\r\n",
+					"    response = requests.get(url)\r\n",
+					"    page_contents = response.text\r\n",
+					"    soup = BeautifulSoup(page_contents, 'html.parser')\r\n",
+					"    goodsoup = soup.find_all(\"div\", {\"class\": class_})\r\n",
+					"    \r\n",
+					"    mydata=[]\r\n",
+					"\r\n",
+					"    for soup in goodsoup:\r\n",
+					"        title = soup.find(\"div\", {\"class\": 'grid-product__title'}).text\r\n",
+					"        category = soup.find(\"div\", {\"class\": 'grid-product__type'}).text.strip()\r\n",
+					"        price = soup.find(\"div\", {\"class\": 'grid-product__price'}).text.strip()\r\n",
+					"        stock = soup.find(\"div\", {\"class\": 'product__inventory'}).text.strip()\r\n",
+					"        \r\n",
+					"        products_dict = {\r\n",
+					"        'title': title,\r\n",
+					"        'category': category,\r\n",
+					"        'price': price,\r\n",
+					"        'stock': stock,\r\n",
+					"        'datetime':datetime.now()\r\n",
+					"        }\r\n",
+					"        \r\n",
+					"        mydata.append(products_dict)\r\n",
+					"    \r\n",
+					"    return mydata"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"data=[]\r\n",
+					"for i in link:\r\n",
+					"    data.extend(scrapping(i,\"grid-product__content\"))\r\n",
+					"df = pd.DataFrame(data)"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df['price']=df['price'].str.replace('€','')\r\n",
+					"df['price']=df['price'].str.replace(',','.')\r\n",
+					"df['stock']=df['stock'].str.replace(' en stock','')"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df"
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df.to_csv('data.csv', index=None)"
+				],
+				"execution_count": 31
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Output using Spark\r\n",
+					"output_container_path = \"abfss://synapsemanuc@datalakegen2manuc.dfs.core.windows.net\"\r\n",
+					"full_output_name = \"{}/{}/{}\".format(output_container_path,output_folder_name,output_blob_name)\r\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df.to_csv(\"abfs[s]://manucurist/\")"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					""
+				]
+			}
+		]
+	}
+}
